@@ -1,28 +1,33 @@
-// pages/index.js
-import { useEffect, useState } from 'react';
+export async function getServerSideProps({ res }) {
+  const merchant_id = process.env.MERCHANT_ID;
+  const merchant_code = process.env.MERCHANT_CODE;
 
-export default function Home() {
-  const [data, setData] = useState({});
+  try {
+    const apiRes = await fetch(
+      `https://gateway.okeconnect.com/api/mutasi/qris/${merchant_id}/${merchant_code}`
+    );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch('/api/mutasi');
-        const json = await res.json();
-        setData(json);
-      } catch {
-        setData({});
-      }
-    };
+    if (!apiRes.ok) {
+      throw new Error(`Fetch failed: ${apiRes.status}`);
+    }
 
-    fetchData();
-    const interval = setInterval(fetchData, 6000);
-    return () => clearInterval(interval);
-  }, []);
+    const data = await apiRes.json();
 
-  return (
-    <>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </>
-  );
+    res.setHeader('Content-Type', 'application/json');
+    res.write(JSON.stringify(data));
+    res.end();
+
+    return { props: {} };
+  } catch (error) {
+    res.setHeader('Content-Type', 'application/json');
+    res.statusCode = 500;
+    res.write(JSON.stringify({ error: error.message }));
+    res.end();
+
+    return { props: {} };
+  }
+}
+
+export default function EmptyPage() {
+  return null;
 }
